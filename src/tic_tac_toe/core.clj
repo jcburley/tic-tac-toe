@@ -1,11 +1,28 @@
 (ns tic-tac-toe.core
+  (:require [clojure.tools.cli :refer [parse-opts]])
   (:gen-class))
 
+(comment (def cli-options
+  (comment
+    ;; An option with a required argument
+    [["-p" "--port PORT" "Port number"
+      :default 80
+      :parse-fn #(Integer/parseInt %)
+      :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
+     ;; A non-idempotent option
+     ["-v" nil "Verbosity level"
+      :id :verbosity
+      :default 0
+      :assoc-fn (fn [m k _] (update-in m [k] inc))])
+    ;; A boolean option defaulting to nil
+    ["-h" "--help"]])
+
+; My original hacky attempt to parse options:
 (defn parse-opts
   ""
   [fn args]
   (if (some (partial = "--help") args)
-    (println "Just try it.")
+    (usage)
     (fn args)))
 
 (defn- board-indices
@@ -84,10 +101,6 @@
   []
   (Game. nil :X (new-board)))
 
-
-
-
-
 (defn start-game
   ""
   [args]
@@ -99,4 +112,5 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (parse-opts start-game args))
+  (parse-opts args cli-options)
+  (comment (start-game nil))
