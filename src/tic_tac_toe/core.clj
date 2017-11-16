@@ -49,9 +49,13 @@
       :else ; failed custom validation => exit with usage summary
       {:exit-message (usage summary)})))
 
-(defn exit [status msg]
-  (println msg)
-  {:exit status})
+(defn exit
+  "Print message (if provided) then return {:exit <status>} to indicate the program should exit"
+  ([status]
+   (exit status nil))
+  ([status msg]
+   (when msg (println msg))
+   {:exit status}))
 
 ;; My original hacky attempt to parse options:
 ;;(defn parse-opts
@@ -72,11 +76,9 @@
   "Define interface for fns that implement (or talk with) a player"
   ;; Choose next move for the player, based on Game.
   (choose [this])
-  ;; Player should be advised as to valid moves.
-  (wants-valid-moves? [this])
   ;; Report state of Game to player. 'why' is :move, :retry, :win,
   ;; :lose, or :draw; 'what' is nil or { <player-kw> <move> }; 'valid'
-  ;; is optional set of valid moves (1-9), or nil if not provided.
+  ;; is set of valid moves (1-9).
   (report [this why what valid]))
 
 (defn valid-move?
@@ -85,7 +87,7 @@
   (or (= move :resign)
       (and
        (integer? move)
-       (nil? (get board move true)))))  ;; Cell occupied?
+       (nil? (get board (dec move) true))))) ;; Cell occupied?
 
 (defn valid-moves
   "Returns set of valid moves for the player to move next"
@@ -101,10 +103,10 @@
                 (Integer/parseInt m)
                 (catch NumberFormatException e m))]
     (cond
-      (= m "resign")
-      :resign
-      (valid-fn? game value)
-      value
+      (= m "resign") :resign
+      (= m "quit") :quit
+      (= m "start") :start
+      (valid-fn? (:board game) value) value
       :else nil)))
 
 (comment (do
@@ -194,11 +196,42 @@
          nil
          :else :draw)))
 
+(defn game-after-move
+  "Return new game object after applying a specific move"
+  [g m]
+  (let [b (assoc (:board g) (dec m) (:next-player g))
+        p (if (= :X (:next-player g)) :O :X)
+        s (game-status b)
+        new-g (Game. s p b)]
+    (println new-g)
+    new-g))
+
+(declare start-game!)
+
+(defn read-next-move
+  ""
+  [g]
+  (or (read-move-interactive g valid-move?)
+      (do
+        (println "Invalid move, try again.")
+        (recur g))))
+
+(defn next-move
+  "Get next move, apply to game, recurse on result"
+  [g]
+  (let [m (read-next-move g)]
+    (condp = m
+      :resign (exit 0 "Resigning")
+      :quit (exit 0 "Quitting")
+      :start (start-game! nil)
+      nil g
+      (next-move (game-after-move g m)))))
+
 (defn start-game!
   ""
-  [args]
-  (println "Hello, World! It's me!! And I still don't play tic-tac-toe!!")
-  args)
+  [options]
+  (let [g (new-game)]
+    (next-move g)))
 
 (defn main
   "Use this in a REPL -- it won't exit, and it'll parse the args"
