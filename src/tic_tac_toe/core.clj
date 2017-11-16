@@ -1,6 +1,7 @@
 (ns tic-tac-toe.core
   (:require [clojure.tools.cli :refer [parse-opts]]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [clojure.core.reducers :as reducers])
   (:gen-class))
 
 (def cli-options
@@ -135,6 +136,47 @@
   "Return new tic-tac-toe game with empty board and :X as next player to move."
   []
   (Game. nil :X (new-board)))
+
+(def winning-positions
+  [[1 2 3]
+   [4 5 6]
+   [7 8 9]
+   [1 4 7]
+   [2 5 8]
+   [3 6 9]
+   [1 5 9]
+   [3 5 7]])
+
+(defn winner-status
+  "Return :X or :O if the player has won the triad"
+  [player w]
+  (not (some #(not= player %) w)))
+
+(defn board-cell
+  "Get whatever is in the cell at board position N (1-based)"
+  [board v]
+  (get board (dec v)))
+
+(defn winner-status-for-triad-positions
+  "Returns whether the player occupies all triad positions on the board"
+  [board player triad-positions]
+  (winner-status player
+                 (map #(board-cell board %) triad-positions)))
+
+(defn player-winning-triad-positions
+  ""
+  [board player]
+  (filter #(first %)
+          (map #(list
+                 (winner-status-for-triad-positions board player %)
+                 %)
+               winning-positions)))
+
+(defn winners-for-board
+  "Return map of players with list of winning positions 'owned' by each player"
+  [board]
+  {:X (player-winning-triad-positions board :X)
+   :O (player-winning-triad-positions board :O)})
 
 (defn start-game!
   ""
