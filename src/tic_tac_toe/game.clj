@@ -19,40 +19,42 @@
    [1 5 9]
    [3 5 7]])
 
+(declare board-cell)
+
 (defn valid-moves
   "Returns set of valid moves for the player to move next"
-  [board]
+  [b]
   ;; TODO: simplify this filter, if possible
-  (filter (fn [n] (nil? (get board n))) (board-indices)))
+  (filter
+   (fn [n] (nil? (board-cell b n)))
+   (board-indices)))
 
 (defn- winner-status
   "Return :X or :O if the player has won the triad"
   [player w]
   (not (some #(not= player %) w)))
 
-(declare board-cell)
-
 (defn- winner-status-for-triad-positions
   "Returns whether the player occupies all triad positions on the board"
-  [board player triad-positions]
+  [b player triad-positions]
   (winner-status player
-                 (map #(board-cell board %) triad-positions)))
+                 (map #(board-cell b %) triad-positions)))
 
 (defn- winning-triad-positions-for-player
   "Return list of winning positions 'owned' by given player"
-  [board player]
+  [b player]
   (map #(first (rest %))
        (filter #(first %)
                (map #(list
-                      (winner-status-for-triad-positions board player %)
+                      (winner-status-for-triad-positions b player %)
                       %)
                     winning-positions))))
 
 (defn- winners-for-board
   "Return map of players with list of winning positions 'owned' by each player"
-  [board]
-  {:X (winning-triad-positions-for-player board :X)
-   :O (winning-triad-positions-for-player board :O)})
+  [b]
+  {:X (winning-triad-positions-for-player b :X)
+   :O (winning-triad-positions-for-player b :O)})
 
 (defn- new-board
   "Return new, empty, tic-tac-toe board"
@@ -60,22 +62,24 @@
   (vec (map (fn [x] constantly nil) (board-indices))))
 
 (defn new
-  "Return new tic-tac-toe game with empty board and :X as next player to move."
+  "Return new tic-tac-toe game with empty board and :X as next player to move"
   []
   (Game. nil :X (new-board)))
 
 (defn board-cell
   "Get whatever is in the cell at board position N (1-based)"
-  [board idx]
-  (get board (dec idx)))
+  ([b idx]
+   (board-cell b idx nil))
+  ([b idx dflt]
+   (get b (dec idx) dflt)))
 
 (defn valid-move?
   "Return nil if proposed move is invalid, true if valid"
-  [board move]
+  [b move]
   (or (= move :resign)
       (and
        (integer? move)
-       (nil? (get board (dec move) true))))) ;; Cell occupied?
+       (nil? (board-cell b move true))))) ;; Cell occupied?
 
 (defn status
   "Returns :draw, (:X <list-of-winning-positions>) (meanings :X

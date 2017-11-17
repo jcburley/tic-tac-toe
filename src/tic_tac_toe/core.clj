@@ -98,17 +98,21 @@
 
 (defn read-next-move
   ""
-  [g]
-  (or (read-move-interactive g game/valid-move?)
+  [g prompt]
+  (or (do
+        (print prompt)
+        (flush)
+        (read-move-interactive g game/valid-move?))
       (do
         (println "Invalid move, try again.")
-        (recur g))))
+        (recur g prompt))))
 
 (defn next-move
   "Get next move, apply to game, recurse on result"
   [g]
-  (txtui/print-game-status g)
-  (let [m (read-next-move g)]
+  (let [m (read-next-move
+           g
+           (txtui/print-game-status g))]
     (condp = m
       :resign (exit 0 "Resigning")
       :quit (exit 0 "Quitting")
