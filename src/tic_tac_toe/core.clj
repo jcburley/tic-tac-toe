@@ -8,8 +8,6 @@
    )
   (:gen-class))
 
-(def ^:dynamic *verbose*)
-
 (def cli-options
   ;; An option with a required argument
   [["-v" "--verbose" "Verbosity level"
@@ -73,13 +71,6 @@
 ;;    (usage)
 ;;    (fn args)))
 
-(defn- board-indices
-  "Return indices for a board"
-  []
-  '(1 2 3 4 5 6 7 8 9))
-
-(defrecord Game [state next-player board])
-
 (defprotocol Player
   "Define interface for fns that implement (or talk with) a player"
   ;; Choose next move for the player, based on Game.
@@ -88,20 +79,6 @@
   ;; :lose, or :draw; 'what' is nil or { <player-kw> <move> }; 'valid'
   ;; is set of valid moves (1-9).
   (report [this why what valid]))
-
-(defn valid-move?
-  "Return nil if proposed move is invalid, true if valid"
-  [board move]
-  (or (= move :resign)
-      (and
-       (integer? move)
-       (nil? (get board (dec move) true))))) ;; Cell occupied?
-
-(defn valid-moves
-  "Returns set of valid moves for the player to move next"
-  [board]
-  ;; TODO: simplify this filter, if possible
-  (filter (fn [n] (nil? (get board n))) (board-indices)))
 
 (defn read-move-interactive
   "Read a move from the terminal and parse it, then returns the move, or nil if invalid"
@@ -117,53 +94,12 @@
       (valid-fn? (:board game) value) value
       :else nil)))
 
-(comment (do
-           (println "Invalid input; please enter valid move or 'resign'.")
-           (flush)
-           (recur)))
-
-
-;; determine-move-randomly picks a random valid move, but never :resign.
-
-
-;; next-valid-move takes a fn that determines or reads a move, a fn
-;; that validates the move, a set of valid board moves for a player,
-;; calls the fn repeatedly until a non-nil result is returned that is
-;; validated, and ultimately returns the valid move.
-
-
-;; update-game returns a new game based on a existing game plus a move,
-;; and returns :draw, an player (:X or :O), or a set of valid next
-;; moves and player to make the move.
-
-
-(defn- new-board
-  "Return new, empty, tic-tac-toe board"
-  []
-  (vec (map (fn [x] constantly nil) (board-indices))))
-
-(defn new-game
-  "Return new tic-tac-toe game with empty board and :X as next player to move."
-  []
-  (Game. nil :X (new-board)))
-
-(defn game-after-move
-  "Return new game object after applying a specific move"
-  [g m]
-  (let [b (assoc (:board g) (dec m) (:next-player g))
-        p (if (= :X (:next-player g)) :O :X)
-        s (game/status g)
-        new-g (Game. s p b)]
-    (if (> *verbose* 0)
-      (println new-g))
-    new-g))
-
 (declare start-game!)
 
 (defn read-next-move
   ""
   [g]
-  (or (read-move-interactive g valid-move?)
+  (or (read-move-interactive g game/valid-move?)
       (do
         (println "Invalid move, try again.")
         (recur g))))
@@ -178,12 +114,12 @@
       :quit (exit 0 "Quitting")
       :start (start-game! nil)
       nil g
-      (next-move (game-after-move g m)))))
+      (next-move (game/after-move g m)))))
 
 (defn start-game!
   ""
   [options]
-  (let [g (new-game)]
+  (let [g (game/new)]
     (next-move g)))
 
 (defn main
@@ -197,7 +133,7 @@
     (if exit-message
       (exit (if ok? 0 1) exit-message)
       (case action
-        "start"  (binding [*verbose* (:verbose options)]
+        "start"  (binding [game/*verbose* (:verbose options)]
                    (start-game! options))))))
 
 (defn -main

@@ -18,10 +18,11 @@
 
 (defn status-to-string [s]
   (cond
+    (nil? s) "Ongoing."
+    (= :draw s) "The game is a draw."
     (= :X (first s)) "Player X has won!"
     (= :O (first s)) "Player O has won!"
-    (= :draw s) "The game is a draw."
-    (= nil s) "Ongoing."))
+  ))
 
 (defn print-game-status
   "Use ASCII art, sorta, to show the game's current status; return suitable prompt"
