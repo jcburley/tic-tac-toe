@@ -1,13 +1,18 @@
 (ns tic-tac-toe.core
-  (:require [clojure.tools.cli :refer [parse-opts]]
-            [clojure.string :as string]
-            [clojure.core.reducers :as reducers])
+  (:require
+   [clojure.core.reducers :as reducers]
+   [clojure.string :as string]
+   [clojure.tools.cli :refer [parse-opts]]
+   [tic-tac-toe.game :as game]
+   [tic-tac-toe.txtui :as txtui]
+   )
   (:gen-class))
+
+(def ^:dynamic *verbose*)
 
 (def cli-options
   ;; An option with a required argument
   [["-v" "--verbose" "Verbosity level"
-    :id :verbosity
     :default 0
     :assoc-fn (fn [m k _] (update-in m [k] inc))]
    ;; A boolean option defaulting to nil
@@ -40,12 +45,15 @@
     (cond
       (:help options) ; help => exit OK with usage summary
       {:exit-message (usage summary) :ok? true}
+
       errors ; errors => exit with description of errors
       {:exit-message (error-msg errors)}
+
       ;; custom validation on arguments
       (and (= 1 (count arguments))
            (#{"start"} (first arguments)))
       {:action (first arguments) :options options}
+
       :else ; failed custom validation => exit with usage summary
       {:exit-message (usage summary)})))
 
@@ -139,70 +147,15 @@
   []
   (Game. nil :X (new-board)))
 
-(def winning-positions
-  [[1 2 3]
-   [4 5 6]
-   [7 8 9]
-   [1 4 7]
-   [2 5 8]
-   [3 6 9]
-   [1 5 9]
-   [3 5 7]])
-
-(defn winner-status
-  "Return :X or :O if the player has won the triad"
-  [player w]
-  (not (some #(not= player %) w)))
-
-(defn board-cell
-  "Get whatever is in the cell at board position N (1-based)"
-  [board v]
-  (get board (dec v)))
-
-(defn winner-status-for-triad-positions
-  "Returns whether the player occupies all triad positions on the board"
-  [board player triad-positions]
-  (winner-status player
-                 (map #(board-cell board %) triad-positions)))
-
-(defn winning-triad-positions-for-player
-  "Return list of winning positions 'owned' by given player"
-  [board player]
-  (map #(first (rest %))
-       (filter #(first %)
-               (map #(list
-                      (winner-status-for-triad-positions board player %)
-                      %)
-                    winning-positions))))
-
-(defn winners-for-board
-  "Return map of players with list of winning positions 'owned' by each player"
-  [board]
-  {:X (winning-triad-positions-for-player board :X)
-   :O (winning-triad-positions-for-player board :O)})
-
-(defn game-status
-  "Returns :draw, (:X <list-of-winning-positions>) (meanings :X
-  wins), (:O <list-of-winning-positions>) (:O wins), or nil (game not
-  over)"
-  [board]
-  (let [w (winners-for-board board)]
-       (cond
-         (> (count (:X w))(count (:O w)))
-         (list :X (:X w))
-         (> (count (:O w))(count (:X w)))
-         (list :O (:O w))
-         (some nil? board) nil
-         :else :draw)))
-
 (defn game-after-move
   "Return new game object after applying a specific move"
   [g m]
   (let [b (assoc (:board g) (dec m) (:next-player g))
         p (if (= :X (:next-player g)) :O :X)
-        s (game-status b)
+        s (game/status g)
         new-g (Game. s p b)]
-    (println new-g)
+    (if (> *verbose* 0)
+      (println new-g))
     new-g))
 
 (declare start-game!)
@@ -218,6 +171,7 @@
 (defn next-move
   "Get next move, apply to game, recurse on result"
   [g]
+  (txtui/print-game-status g)
   (let [m (read-next-move g)]
     (condp = m
       :resign (exit 0 "Resigning")
@@ -243,7 +197,8 @@
     (if exit-message
       (exit (if ok? 0 1) exit-message)
       (case action
-        "start"  (start-game! options)))))
+        "start"  (binding [*verbose* (:verbose options)]
+                   (start-game! options))))))
 
 (defn -main
   "The formal main entrypoint"
