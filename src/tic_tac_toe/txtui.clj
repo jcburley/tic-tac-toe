@@ -39,7 +39,7 @@
     (println (str " " (c 7) (c 8) (c 9) "  789"))
     (println "\nGame status:" (status-to-string s))
     (str
-     "'quit', 'start', 'resign'"
+     "Enter command (try 'help')"
      (if (nil? s)
        (str
         ", or valid move (any one of: "

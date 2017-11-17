@@ -91,6 +91,8 @@
       (= m "resign") :resign
       (= m "quit") :quit
       (= m "start") :start
+      (= m "back") :back
+      (= m "reset") :reset
       (valid-fn? (:board game) value) value
       :else nil)))
 
@@ -114,17 +116,32 @@
            g
            (txtui/print-game-status g))]
     (condp = m
-      :resign (exit 0 "Resigning")
-      :quit (exit 0 "Quitting")
+      :resign (exit 0 "\nResigning.\n")
+      :quit (exit 0 "\nQuitting.\n")
       :start (start-game! nil)
-      nil g
-      (next-move (game/after-move g m)))))
+      :back (do
+              (println "\nBacking up one move.\n")
+              :back)
+      :reset (do
+               (println "\nResetting game.\n")
+               :reset)
+      nil g  ; This shouldn't happen anymore.
+      (let [n (next-move (game/after-move g m))]
+            (condp = n
+              :back (recur g)
+              n)))))
 
 (defn start-game!
   ""
   [options]
-  (let [g (game/new)]
-    (next-move g)))
+  (let [g (game/new)
+        n (next-move g)]
+    (condp = n
+      :reset (recur options)
+      :back (do
+              (println "(Can't go back to previous game, so just resetting.)\n")
+              (recur options))
+      n)))
 
 (defn main
   "Use this in a REPL -- it won't exit, and it'll parse the args"
