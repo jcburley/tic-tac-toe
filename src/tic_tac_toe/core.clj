@@ -192,8 +192,7 @@
          (list :X (:X w))
          (> (count (:O w))(count (:X w)))
          (list :O (:O w))
-         (some nil? board)
-         nil
+         (some nil? board) nil
          :else :draw)))
 
 (defn game-after-move
