@@ -80,22 +80,6 @@
   ;; is set of valid moves (1-9).
   (report [this why what valid]))
 
-(defn read-move-interactive
-  "Read a move from the terminal and parse it, then returns the move, or nil if invalid"
-  [game valid-fn?]
-  (let [m (read-line)
-        value (try
-                (Integer/parseInt m)
-                (catch NumberFormatException e m))]
-    (cond
-      (= m "resign") :resign
-      (= m "quit") :quit
-      (= m "start") :start
-      (= m "back") :back
-      (= m "reset") :reset
-      (valid-fn? (:board game) value) value
-      :else nil)))
-
 (declare start-game!)
 
 (defn read-next-move
@@ -104,7 +88,7 @@
   (or (do
         (print prompt)
         (flush)
-        (read-move-interactive g game/valid-move?))
+        (txtui/read-move-interactive g game/valid-move?))
       (do
         (println "Invalid move, try again.")
         (recur g prompt))))

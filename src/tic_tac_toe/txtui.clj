@@ -48,3 +48,19 @@
        "")
      "> ")
     ))
+
+(defn read-move-interactive
+  "Read a move from the terminal and parse it, then returns the move, or nil if invalid"
+  [game valid-fn?]
+  (let [m (read-line)
+        value (try
+                (Integer/parseInt m)
+                (catch NumberFormatException e m))]
+    (cond
+      (= m "resign") :resign
+      (= m "quit") :quit
+      (= m "start") :start
+      (= m "back") :back
+      (= m "reset") :reset
+      (valid-fn? (:board game) value) value
+      :else nil)))
