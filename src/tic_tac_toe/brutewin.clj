@@ -4,10 +4,22 @@
    )
   (:gen-class))
 
-(defn- my-turn [g m]
-  (list (inc m) m))
+(defn- my-turn
+  "Given a game and a move, return a two-item list with the 'rating' of the move and the move itself"
+  [g m]
+  (let [me (:next-player g)
+        new-g (game/after-move g m)
+        s (:state new-g)]
+    (list
+     (cond
+       (nil? s) Integer/MIN_VALUE  ; TODO: try possible opponent moves here
+       (= :draw s) 0
+       (= me (first s)) Integer/MAX_VALUE)
+     m)))
 
-(defn- best [g ms]
+(defn- best
+  "Given a game and list of valid moves, return the best move to make"
+  [g ms]
   (nth (first (take 1 (sort #(> (first %1) (first %2)) (map #(my-turn g %) ms)))) 1))
 
 (defn move
