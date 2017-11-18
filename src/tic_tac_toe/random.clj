@@ -5,7 +5,7 @@
   (:gen-class))
 
 (defn move
-  "Return a random empty cell's index, or nil if nothing available."
+  "Return a random empty cell's index, or nil if nothing available"
   [g]
   (when (> game/*verbose* 1)
     (println "In random/move: " g)

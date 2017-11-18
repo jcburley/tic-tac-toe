@@ -1,5 +1,6 @@
 (ns tic-tac-toe.txtui
   (:require
+   [tic-tac-toe.brutewin :as brutewin]
    [tic-tac-toe.game :as game]
    [tic-tac-toe.next :as next]
    [tic-tac-toe.random :as random]
@@ -75,7 +76,7 @@
     (cond
       (= m "next") (next/move g)
       (= m "random") (random/move g)
-      (= m "brutewin") nil;;;; (brutewin/move g)
+      (= m "brutewin") (brutewin/move g)
       (= m "resign") :resign
       (= m "quit") :quit
       (= m "start") :start
