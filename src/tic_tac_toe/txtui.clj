@@ -49,9 +49,20 @@
      "> ")
     ))
 
+(defn- help []
+  (println
+   "\n"
+   "Commands include:\n\n"
+   "resign    -- Just like 'quit'\n"
+   "back      -- Back up one move\n"
+   "reset     -- Reset to beginning of game\n"
+   "start     -- Start a new game (just like 'reset' but wastes memory)\n"
+   "help      -- This message\n"
+   "quit      -- Exit the game\n"))
+
 (defn read-move-interactive
   "Read a move from the terminal and parse it, then returns the move, or nil if invalid"
-  [game valid-fn?]
+  [g valid-fn?]
   (let [m (read-line)
         value (try
                 (Integer/parseInt m)
@@ -62,5 +73,8 @@
       (= m "start") :start
       (= m "back") :back
       (= m "reset") :reset
-      (valid-fn? (:board game) value) value
+      (= m "help") (do
+                     (help)
+                     :help)
+      (valid-fn? (:board g) value) value
       :else nil)))

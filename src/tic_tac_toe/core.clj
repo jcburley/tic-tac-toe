@@ -109,6 +109,7 @@
       :reset (do
                (println "\nResetting game.\n")
                :reset)
+      :help (recur g)
       nil g  ; This shouldn't happen anymore.
       (let [n (next-move (game/after-move g m))]
             (condp = n
