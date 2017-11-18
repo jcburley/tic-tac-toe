@@ -1,16 +1,16 @@
-(ns tic-tac-toe.next
+(ns tic-tac-toe.random
   (:require
    [tic-tac-toe.game :as game]
    )
   (:gen-class))
 
 (defn move
-  "Return the next empty cell's index, or nil if nothing available."
+  "Return a random empty cell's index, or nil if nothing available."
   [g]
   (when (> game/*verbose* 1)
-    (println "In next/move: " g)
+    (println "In random/move: " g)
     (flush))
-  (or (first (game/valid-moves g))
+  (or (rand-nth (game/valid-moves g))
       (do
         (println "\nNo further moves are available.\n")
         nil)))

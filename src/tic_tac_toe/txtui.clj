@@ -2,6 +2,7 @@
   (:require
    [tic-tac-toe.game :as game]
    [tic-tac-toe.next :as next]
+   [tic-tac-toe.random :as random]
    )
   (:gen-class))
 
@@ -50,7 +51,7 @@
     ))
 
 (defn- help []
-  (println
+  (println (str
    "\n"
    "Commands include:\n\n"
    "next      -- Choose next available cell\n"
@@ -62,6 +63,7 @@
    "start     -- Start a new game (just like 'reset' but wastes memory)\n"
    "help      -- This message\n"
    "quit      -- Exit the game\n"))
+  (flush))
 
 (defn read-move-interactive
   "Read a move from the terminal and parse it, then returns the move, or nil if invalid"
@@ -72,8 +74,8 @@
                 (catch NumberFormatException e m))]
     (cond
       (= m "next") (next/move g)
-      (= m "random") :random
-      (= m "brutewin") :brutewin
+      (= m "random") (random/move g)
+      (= m "brutewin") nil;;;; (brutewin/move g)
       (= m "resign") :resign
       (= m "quit") :quit
       (= m "start") :start

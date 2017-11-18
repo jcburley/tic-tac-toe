@@ -110,6 +110,7 @@
         p (if (= :X (:next-player g)) :O :X)
         s (board-status b)
         new-g (Game. s p b)]
-    (if (> *verbose* 0)
-      (println new-g))
+    (when (> *verbose* 0)
+      (println "In after-move: " new-g)
+      (flush))
     new-g))
