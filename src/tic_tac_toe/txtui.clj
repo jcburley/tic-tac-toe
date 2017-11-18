@@ -7,6 +7,8 @@
    )
   (:gen-class))
 
+(declare player-to-string)
+
 (defn- cell-to-char
   "'X', 'O', or nil, depending on the value of the cell in the board"
   [board idx]
@@ -20,7 +22,7 @@
 
 (defn- winner-to-string [s]
   (str "Player "
-       (if (= (first s) :X) "X" "O")
+       (player-to-string (first s))
        " has won! See: " (first (first (rest s)))))
 
 (defn- status-to-string [s]
@@ -30,6 +32,13 @@
     (= :X (first s)) (winner-to-string s)
     (= :O (first s)) (winner-to-string s)
   ))
+
+(defn player-to-string
+  "Return 'X' or 'O'"
+  [p]
+  (condp = p
+    :X "X"
+    :O "O"))
 
 (defn print-game-status
   "Use ASCII art, sorta, to show the game's current status; return suitable prompt"
@@ -44,7 +53,9 @@
      "Enter command (try 'help')"
      (if (nil? s)
        (str
-        ", or valid move (any one of: "
+        ", or valid move for "
+        (player-to-string (:next-player g))
+        " (any one of: "
         (apply str (map #(char (+ 48 %)) (game/valid-moves g)))
         ")")
        "")
