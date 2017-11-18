@@ -1,7 +1,7 @@
 (ns tic-tac-toe.txtui
   (:require
-   [clojure.string :as s]
    [tic-tac-toe.game :as game]
+   [tic-tac-toe.next :as next]
    )
   (:gen-class))
 
@@ -43,7 +43,7 @@
      (if (nil? s)
        (str
         ", or valid move (any one of: "
-        (apply str (map #(char (+ 48 %)) (game/valid-moves (:board g))))
+        (apply str (map #(char (+ 48 %)) (game/valid-moves g)))
         ")")
        "")
      "> ")
@@ -53,6 +53,9 @@
   (println
    "\n"
    "Commands include:\n\n"
+   "next      -- Choose next available cell\n"
+   "random    -- Choose random available cell\n"
+   "brutewin  -- Try to win via brute-force analysis\n"
    "resign    -- Just like 'quit'\n"
    "back      -- Back up one move\n"
    "reset     -- Reset to beginning of game\n"
@@ -68,6 +71,9 @@
                 (Integer/parseInt m)
                 (catch NumberFormatException e m))]
     (cond
+      (= m "next") (next/move g)
+      (= m "random") :random
+      (= m "brutewin") :brutewin
       (= m "resign") :resign
       (= m "quit") :quit
       (= m "start") :start
@@ -77,4 +83,6 @@
                      (help)
                      :help)
       (valid-fn? (:board g) value) value
-      :else nil)))
+      :else (do
+              (println "\nInvalid move, try again.\n")
+              nil))))
