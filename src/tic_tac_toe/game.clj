@@ -111,6 +111,7 @@
         s (board-status b)
         new-g (Game. s p b)]
     (when (> *verbose* 0)
-      (println "In after-move: " new-g)
+      (printf "In after-move (%s->%s): %s\n"
+              (:next-player g) m (pr-str new-g))
       (flush))
     new-g))

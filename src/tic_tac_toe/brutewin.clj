@@ -4,40 +4,77 @@
    )
   (:gen-class))
 
+(declare best)
+
 (defn- worst
-  "Given a game and list of valid moves, return the worst move the opponent can possibly make to hurt the player originally calling 'move'"
+  "Given a game and non-empty list of valid moves, return a two-item list with the 'rating' of/and the worst move the opponent can possibly make to hurt the player originally calling 'move'"
   [g ms]
-  (if (seq ms)
-    (let [vm (best g ms)
-          v (get vm 1 nil)]
-      (when (> game/*verbose* 2)
-        (println "In brutewin/worst: " g "\n  " vm v)
-        (flush))
-      (first vm))
-    0))
+  {:pre [(seq ms)]}
+  (when (> game/*verbose* 0)
+    (printf "In brutewin/worst: %s\n  Valid moves for %s: %s\n"
+            (pr-str g) (:next-player g) (pr-str ms))
+    (flush))
+  (let [best-m (best g ms)]
+    (when (> game/*verbose* 0)
+      (printf "In brutewin/worst, best %s move: %s\n"
+              (:next-player g) best-m)
+      (flush))
+    best-m))
+
+;; A macro that expands into multiple sexpr would be helpful for
+;; :post, because then a failed post-condition would highlight the
+;; specific condition that failed (one would hope), rather than just
+;; saying 'valid-rated-move? failed'. But Lisp macros generally, and
+;; Clojure macros specifically, can expand into only a single sexpr.
+
+;; (defmacro valid-rated-move-as-macro?
+;;   "Suitable for pre/post-conditions"
+;;   [rm]
+;;   `((list? ~rm)
+;;     (= 3 (count ~rm))
+;;     (integer? (first ~rm))
+;;     (integer? (first (rest ~rm)))))
+
+(defn- valid-rated-move?
+  "Suitable for pre/post-conditions"
+  [rm]
+  (and (list? rm)
+       (= 2 (count rm))
+       (integer? (first rm))
+       (integer? (first (rest rm)))))
 
 (defn- my-turn
   "Given a game and a move, return a two-item list with the 'rating' of the move and the move itself"
   [g m]
+  {:post [(valid-rated-move? %)]}
   (let [me (:next-player g)
         new-g (game/after-move g m)
-        s (:state new-g)]
-    (list
-     (cond
-       (nil? s) (worst new-g (game/valid-moves new-g))
-       (= :draw s) 0
-       (= me (first s)) Integer/MAX_VALUE)
-     m)))
+        new-s (:state new-g)
+        new-ms (game/valid-moves new-g)]
+    (when (> game/*verbose* 0)
+      (printf "In brutewin/my-turn: %s\n  Valid moves for %s: %s\n"
+              (pr-str new-g) (:next-player new-g) (pr-str new-ms))
+      (flush))
+    (cond
+      (nil? new-s) (worst new-g new-ms)
+      (= :draw new-s) (list 0 m)
+      (= me (first new-s)) (list Integer/MAX_VALUE m))))
 
 (defn- best
-  "Given a game and list of valid moves, return the best move to make"
+  "Given a game and list of valid moves, return a two-item list with the 'rating' of/and best move to make; return '(nil nil) if no valid moves"
   [g ms]
-  (take 1 (sort #(> (first %1) (first %2)) (map #(my-turn g %) ms))))
+  {:post [(or (= '(nil nil) %) (valid-rated-move? %))]}
+  (when (> game/*verbose* 0)
+    (println "In brutewin/best:" g "\n  Valid moves:" ms)
+    (flush))
+  (if (seq ms)
+    (first (sort #(> (first %1) (first %2)) (map #(my-turn g %) ms)))
+    '(nil nil)))
 
 (defn- best-move
-  "Given a game and list of valid moves, return the best move to make"
+  "Given a game and a list of valid moves, return the best move to make or nil if no valid moves"
   [g ms]
-  (and (seq ms) (nth (first (best g ms)) 1)))
+  (nth (best g ms) 1))
 
 (defn move
   "Return a empty cell's index, or nil if nothing available. The cell is chosen to provide the best opportunity for the same player to win, or at least draw, via brute-force analysis."
