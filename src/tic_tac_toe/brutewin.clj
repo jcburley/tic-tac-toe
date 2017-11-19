@@ -64,10 +64,12 @@
       (printf "In brutewin/my-turn: %s\n  Valid moves for %s: %s\n"
               (pr-str new-g) (:next-player new-g) (pr-str new-ms))
       (flush))
-    (cond
-      (nil? new-s) (worst new-g new-ms)                   ; "Inverse" rating of the opponent's best next move.
-      (= :draw new-s) (list 0 m)                          ; Outright draw, zero rating.
-      (= me (first new-s)) (list Integer/MAX_VALUE m))))  ; Outright win, max possible rating.
+    (list
+     (cond
+       (nil? new-s) (first (worst new-g new-ms)); "Inverse" rating of the opponent's best next move.
+       (= :draw new-s) 0                        ; Outright draw, zero rating.
+       (= me (first new-s)) Integer/MAX_VALUE)  ; Outright win, max possible rating.
+     m)))
 
 (defn- best
   "Given a game and list of valid moves, return a two-item list with the 'rating' of/and best move to make; return '(nil nil) if no valid moves"
