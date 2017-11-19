@@ -23,10 +23,14 @@
 (defn- valid-rated-move?
   "Suitable for pre/post-conditions"
   [rm]
-  (and (list? rm)
-       (= 2 (count rm))
-       (integer? (first rm))
-       (integer? (first (rest rm)))))
+  (or (and (list? rm)
+        (= 2 (count rm))
+        (integer? (first rm))
+        (integer? (first (rest rm))))
+      (do
+        (printf "Failed %%=%s\n" (pr-str rm))
+        (flush)
+        false)))
 
 (defn- worst
   "Given a game and non-empty list of valid moves, return a two-item list with the 'rating' of/and the worst move the opponent can possibly make to hurt the player originally calling 'move'"
@@ -43,11 +47,10 @@
               (:next-player g) best-m)
       (flush))
     (condp = (first best-m)
-      nil? best-m                                            ; Should never happen in tic-tact-toe (unless we limit the depth of the search)
-      Integer/MAX_VALUE '(Integer/MIN_VALUE (nth best-m 1))  ; Opponent wins means "we" lose
-      Integer/MIN_VALUE '(Integer/MAX_VALUE (nth best-m 1))  ; Should never happen in tic-tac-toe
-      '((- (first best-m)) (nth best-m 1)))                  ; Invert the rating
-    best-m))
+      nil? best-m                                                ; Should never happen in tic-tac-toe (unless we limit the depth of the search)
+      Integer/MAX_VALUE (list Integer/MIN_VALUE (nth best-m 1))  ; Opponent wins means "we" lose
+      Integer/MIN_VALUE (list Integer/MAX_VALUE (nth best-m 1))  ; Should never happen in tic-tac-toe
+      (list (- (first best-m)) (nth best-m 1)))))                ; Invert the rating
 
 (defn- my-turn
   "Given a game and a move, return a two-item list with the 'rating' of the move and the move itself"
