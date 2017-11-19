@@ -6,21 +6,6 @@
 
 (declare best)
 
-(defn- worst
-  "Given a game and non-empty list of valid moves, return a two-item list with the 'rating' of/and the worst move the opponent can possibly make to hurt the player originally calling 'move'"
-  [g ms]
-  {:pre [(seq ms)]}
-  (when (> game/*verbose* 0)
-    (printf "In brutewin/worst: %s\n  Valid moves for %s: %s\n"
-            (pr-str g) (:next-player g) (pr-str ms))
-    (flush))
-  (let [best-m (best g ms)]
-    (when (> game/*verbose* 0)
-      (printf "In brutewin/worst, best %s move: %s\n"
-              (:next-player g) best-m)
-      (flush))
-    best-m))
-
 ;; A macro that expands into multiple sexpr would be helpful for
 ;; :post, because then a failed post-condition would highlight the
 ;; specific condition that failed (one would hope), rather than just
@@ -43,6 +28,27 @@
        (integer? (first rm))
        (integer? (first (rest rm)))))
 
+(defn- worst
+  "Given a game and non-empty list of valid moves, return a two-item list with the 'rating' of/and the worst move the opponent can possibly make to hurt the player originally calling 'move'"
+  [g ms]
+  {:pre [(seq ms)]
+   :post [(valid-rated-move? %)]}
+  (when (> game/*verbose* 0)
+    (printf "In brutewin/worst: %s\n  Valid moves for %s: %s\n"
+            (pr-str g) (:next-player g) (pr-str ms))
+    (flush))
+  (let [best-m (best g ms)]
+    (when (> game/*verbose* 0)
+      (printf "In brutewin/worst, best %s move: %s\n"
+              (:next-player g) best-m)
+      (flush))
+    (condp = (first best-m)
+      nil? best-m                                            ; Should never happen in tic-tact-toe (unless we limit the depth of the search)
+      Integer/MAX_VALUE '(Integer/MIN_VALUE (nth best-m 1))  ; Opponent wins means "we" lose
+      Integer/MIN_VALUE '(Integer/MAX_VALUE (nth best-m 1))  ; Should never happen in tic-tac-toe
+      '((- (first best-m)) (nth best-m 1)))                  ; Invert the rating
+    best-m))
+
 (defn- my-turn
   "Given a game and a move, return a two-item list with the 'rating' of the move and the move itself"
   [g m]
@@ -56,9 +62,9 @@
               (pr-str new-g) (:next-player new-g) (pr-str new-ms))
       (flush))
     (cond
-      (nil? new-s) (worst new-g new-ms)
-      (= :draw new-s) (list 0 m)
-      (= me (first new-s)) (list Integer/MAX_VALUE m))))
+      (nil? new-s) (worst new-g new-ms)                   ; "Inverse" rating of the opponent's best next move.
+      (= :draw new-s) (list 0 m)                          ; Outright draw, zero rating.
+      (= me (first new-s)) (list Integer/MAX_VALUE m))))  ; Outright win, max possible rating.
 
 (defn- best
   "Given a game and list of valid moves, return a two-item list with the 'rating' of/and best move to make; return '(nil nil) if no valid moves"
