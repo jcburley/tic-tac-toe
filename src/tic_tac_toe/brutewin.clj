@@ -4,6 +4,86 @@
    )
   (:gen-class))
 
+;; This module implements an "ideal" strategy to do its best (win or
+;; draw versus lose) via brute-force analysis, which can be quite
+;; expensive. It is called for a single move, so it needn't be called
+;; for each move made by a particular player. It does the analysis
+;; dynamically (on the fly), rather than creating a map of possible
+;; strategies and consulting it -- though, since it uses only the
+;; immutable datatypes offered by Clojure, presumably what it walks
+;; the first time could be memoized in some fashion.
+;;
+;; tic-tac-toe has certain specific properties. For example, strictly
+;; speaking, one cannot make a move that causes one to lose; the
+;; opponent must move to win. (Compare to Chess, where one can move a
+;; piece such that one's own king ends up in checkmate, which -- if
+;; that was allowed, and I don't think it actually is -- would mean
+;; one can make a losing move.)
+;;
+;; Anyway, for simple two-person, non-random, single-move games, a
+;; goal is to keep this module (as well as some others) abstracted
+;; away from the specifics of any one game.
+;;
+;; Determining the ideal brute-force algorithm is requiring a lot of
+;; thought on my part, as I can't recall figuring one out for many,
+;; many years, and am not sure when, where, why, or in what language I
+;; did it way back then!
+;;
+;; Starting from the lowest level and working up, a "leaf" move is one
+;; that results in a win, loss, or draw -- there is no continuation of
+;; play. So, a leaf move under consideration has one of these results,
+;; to be considered in this order:
+;;
+;;   Win; Draw; Lose.
+;;
+;; (In tic-tac-toe, there's only one choice for a "leaf" move anyway.)
+;;
+;; Now, a non-leaf move has a choice that has what I call an "ongoing"
+;; result (currently coded as 'nil'). The result of that choice must
+;; be analyzed based on other current choices and on the results of
+;; potential subsequent moves. The above ordering becomes:
+;;
+;;   Win; (Draw or Ongoing); Lose.
+;;
+;; That is, a winning move is always preferred, and a losing move is
+;; always to be avoided in favor of any other (although one could
+;; argue that if an Ongoing move leads to certain loss, picking a
+;; losing move might save resources?).
+;;
+;; So, if all the moves under present consideration are Draw and
+;; Ongoing, the Ongoing moves must be analyzed further to make a
+;; choice.
+;;
+;; Recursive analysis is used for such Ongoing moves. The next
+;; possible move (by the opponent) is analyzed to see what the results
+;; would be for each move. This analysis starts as above ("Starting
+;; from the lowest level...") but its result is modified to represent
+;; the interest of the original mover:
+;;
+;;   Win => Certain loss for original mover, so avoid the original
+;;     move at all costs.
+;;
+;;   Draw => Possible draw for original mover.
+;;
+;;   Ongoing => Further analysis needed.
+;;
+;;   Lose => Possible win for original mover.
+;;
+;; Note that the "Win => Certain loss" result effectively
+;; "short-circuits" the analysis of other potential opponent moves --
+;; they need not be analyzed, since they cannot improve the
+;; favorability of the original move under consideration, unless one
+;; is relying on the opponent *not* making a winning move.
+;;
+;; The remaining possibilities require their aggregation across the
+;; possible moves on the part of the opponent:
+;;
+;;   all Lose => Sure win for original mover.
+;;
+;;   all Draw => Sure draw for original mover.
+;;
+;;
+
 (declare best)
 
 ;; A macro that expands into multiple sexpr would be helpful for
@@ -11,7 +91,6 @@
 ;; specific condition that failed (one would hope), rather than just
 ;; saying 'valid-rated-move? failed'. But Lisp macros generally, and
 ;; Clojure macros specifically, can expand into only a single sexpr.
-
 ;; (defmacro valid-rated-move-as-macro?
 ;;   "Suitable for pre/post-conditions"
 ;;   [rm]
