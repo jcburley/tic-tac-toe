@@ -23,11 +23,12 @@
 
 (defn valid-moves
   "Returns set of valid moves for the player to move next"
-  [b]
+  [g]
   ;; TODO: simplify this filter, if possible
-  (filter
-   (fn [n] (nil? (board-cell b n)))
-   (board-indices)))
+  (if (nil? (:state g))
+    (filter
+     (fn [n] (nil? (board-cell (:board g) n)))
+     (board-indices))))
 
 (defn- winner-status
   "Return :X or :O if the player has won the triad"
@@ -81,27 +82,36 @@
        (integer? move)
        (nil? (board-cell b move true))))) ;; Cell occupied?
 
-(defn status
+(defn- board-status
   "Returns :draw, (:X <list-of-winning-positions>) (meanings :X
   wins), (:O <list-of-winning-positions>) (:O wins), or nil (game not
   over)"
-  [g]
-  (let [w (winners-for-board (:board g))]
+  [b]
+  (let [w (winners-for-board b)]
     (cond
       (> (count (:X w))(count (:O w)))
       (list :X (:X w))
       (> (count (:O w))(count (:X w)))
       (list :O (:O w))
-      (some nil? (:board g)) nil
+      (some nil? b) nil
       :else :draw)))
+
+(defn status
+  "Returns :draw, (:X <list-of-winning-positions>) (meanings :X
+  wins), (:O <list-of-winning-positions>) (:O wins), or nil (game not
+  over)"
+  [g]
+  (board-status (:board g)))
 
 (defn after-move
   "Return new game object after applying a specific move"
   [g m]
   (let [b (assoc (:board g) (dec m) (:next-player g))
         p (if (= :X (:next-player g)) :O :X)
-        s (status g)
+        s (board-status b)
         new-g (Game. s p b)]
-    (if (> *verbose* 0)
-      (println new-g))
+    (when (> *verbose* 0)
+      (printf "In after-move (%s->%s): %s\n"
+              (:next-player g) m (pr-str new-g))
+      (flush))
     new-g))

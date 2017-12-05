@@ -1,9 +1,13 @@
 (ns tic-tac-toe.txtui
   (:require
-   [clojure.string :as s]
+   [tic-tac-toe.brutewin :as brutewin]
    [tic-tac-toe.game :as game]
+   [tic-tac-toe.next :as next]
+   [tic-tac-toe.random :as random]
    )
   (:gen-class))
+
+(declare player-to-string)
 
 (defn- cell-to-char
   "'X', 'O', or nil, depending on the value of the cell in the board"
@@ -18,7 +22,7 @@
 
 (defn- winner-to-string [s]
   (str "Player "
-       (if (= (first s) :X) "X" "O")
+       (player-to-string (first s))
        " has won! See: " (first (first (rest s)))))
 
 (defn- status-to-string [s]
@@ -28,6 +32,13 @@
     (= :X (first s)) (winner-to-string s)
     (= :O (first s)) (winner-to-string s)
   ))
+
+(defn player-to-string
+  "Return 'X' or 'O'"
+  [p]
+  (condp = p
+    :X "X"
+    :O "O"))
 
 (defn print-game-status
   "Use ASCII art, sorta, to show the game's current status; return suitable prompt"
@@ -42,23 +53,29 @@
      "Enter command (try 'help')"
      (if (nil? s)
        (str
-        ", or valid move (any one of: "
-        (apply str (map #(char (+ 48 %)) (game/valid-moves (:board g))))
+        ", or valid move for "
+        (player-to-string (:next-player g))
+        " (any one of: "
+        (apply str (map #(char (+ 48 %)) (game/valid-moves g)))
         ")")
        "")
      "> ")
     ))
 
 (defn- help []
-  (println
+  (println (str
    "\n"
    "Commands include:\n\n"
+   "next      -- Choose next available cell\n"
+   "random    -- Choose random available cell\n"
+   "brutewin  -- Try to win via brute-force analysis\n"
    "resign    -- Just like 'quit'\n"
    "back      -- Back up one move\n"
    "reset     -- Reset to beginning of game\n"
    "start     -- Start a new game (just like 'reset' but wastes memory)\n"
    "help      -- This message\n"
    "quit      -- Exit the game\n"))
+  (flush))
 
 (defn read-move-interactive
   "Read a move from the terminal and parse it, then returns the move, or nil if invalid"
@@ -68,6 +85,9 @@
                 (Integer/parseInt m)
                 (catch NumberFormatException e m))]
     (cond
+      (= m "next") (next/move g)
+      (= m "random") (random/move g)
+      (= m "brutewin") (brutewin/move g)
       (= m "resign") :resign
       (= m "quit") :quit
       (= m "start") :start
@@ -77,4 +97,6 @@
                      (help)
                      :help)
       (valid-fn? (:board g) value) value
-      :else nil)))
+      :else (do
+              (println "\nInvalid move, try again.\n")
+              nil))))

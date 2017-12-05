@@ -89,9 +89,7 @@
         (print prompt)
         (flush)
         (txtui/read-move-interactive g game/valid-move?))
-      (do
-        (println "Invalid move, try again.")
-        (recur g prompt))))
+      (recur g prompt)))
 
 (defn next-move
   "Get next move, apply to game, recurse on result"
