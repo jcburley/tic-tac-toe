@@ -31,12 +31,14 @@
 ;;
 ;; Starting from the lowest level and working up, a "leaf" move is one
 ;; that results in a win, loss, or draw -- there is no continuation of
-;; play. So, a leaf move under consideration has one of these results,
-;; to be considered in this order:
+;; play. So, a leaf move under consideration has one of these results:
 ;;
 ;;   Win; Draw; Lose.
 ;;
-;; (In tic-tac-toe, there's only one choice for a "leaf" move anyway.)
+;; When multiple moves are considered, they are to be considered in
+;; the order shown (choose a Winning move over a Draw, and a Draw move
+;; over a Losing move).  (In tic-tac-toe, there's only one choice for
+;; a "leaf" move anyway.)
 ;;
 ;; Now, a non-leaf move has a choice that has what I call an "ongoing"
 ;; result (currently coded as 'nil'). The result of that choice must
@@ -50,9 +52,9 @@
 ;; argue that if an Ongoing move leads to certain loss, picking a
 ;; losing move might save resources?).
 ;;
-;; So, if all the moves under present consideration are Draw and
-;; Ongoing, the Ongoing moves must be analyzed further to make a
-;; choice.
+;; So, if any move under present consideration is Ongoing, and there's
+;; no Win move available, the Ongoing move(s) must be analyzed further
+;; to make a choice.
 ;;
 ;; Recursive analysis is used for such Ongoing moves. The next
 ;; possible move (by the opponent) is analyzed to see what the results
@@ -64,8 +66,6 @@
 ;;     move at all costs.
 ;;
 ;;   Draw => Possible draw for original mover.
-;;
-;;   Ongoing => Further analysis needed.
 ;;
 ;;   Lose => Possible win for original mover.
 ;;
@@ -82,7 +82,14 @@
 ;;
 ;;   all Draw => Sure draw for original mover.
 ;;
+;; TODO: FIX/FINISH DRAFT LOGIC, ABOVE, AND IMPLEMENT.
 ;;
+;; BUG: Given moves 12685, O should choose 4, but chooses 3. X then
+;; wins with 4.
+;;
+;; BUG: Given moves 918, O should 7 but 2, then X should 7 but 3.
+;;
+;; BUG: Given 59, X should not 1, but 1.
 
 (declare best)
 
