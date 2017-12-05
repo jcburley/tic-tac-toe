@@ -6,4 +6,5 @@
   :dependencies [[org.clojure/clojure "1.8.0"] [org.clojure/tools.cli "0.3.5"]]
   :main ^:skip-aot tic-tac-toe.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  :repl-options {:init-ns tic-tac-toe.core})
