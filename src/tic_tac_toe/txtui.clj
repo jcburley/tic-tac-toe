@@ -1,13 +1,12 @@
 (ns tic-tac-toe.txtui
   (:require
+   [clojure.string :as s]
    [tic-tac-toe.brutewin :as brutewin]
    [tic-tac-toe.game :as game]
    [tic-tac-toe.next :as next]
    [tic-tac-toe.random :as random]
    )
   (:gen-class))
-
-(declare player-to-string)
 
 (defn- cell-to-char
   "'X', 'O', or nil, depending on the value of the cell in the board"
@@ -20,10 +19,17 @@
 (defmacro c [idx]
   `(cell-to-char (:board ~'g) ~idx))
 
+(defn player-to-string
+  "Return 'X' or 'O'"
+  [p]
+  (condp = p
+    :X "X"
+    :O "O"))
+
 (defn- winner-to-string [s]
   (str "Player "
        (player-to-string (first s))
-       " has won! See: " (first (first (rest s)))))
+       " has won! See: " (first (second s))))
 
 (defn- status-to-string [s]
   (cond
@@ -32,13 +38,6 @@
     (= :X (first s)) (winner-to-string s)
     (= :O (first s)) (winner-to-string s)
   ))
-
-(defn player-to-string
-  "Return 'X' or 'O'"
-  [p]
-  (condp = p
-    :X "X"
-    :O "O"))
 
 (defn print-game-status
   "Use ASCII art, sorta, to show the game's current status; return suitable prompt"
@@ -56,7 +55,7 @@
         ", or valid move for "
         (player-to-string (:next-player g))
         " (any one of: "
-        (apply str (map #(char (+ 48 %)) (game/valid-moves g)))
+        (s/join " " (game/valid-moves g))
         ")")
        "")
      "> ")
