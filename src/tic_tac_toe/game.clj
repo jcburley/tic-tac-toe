@@ -2,10 +2,8 @@
 
 (def ^:dynamic *verbose*)
 
-(defn- board-indices
-  "Return indices for a board"
-  []
-  '(1 2 3 4 5 6 7 8 9))
+(def ^:private board-indices
+  (range 1 10))
 
 (defrecord Game [state next-player board])
 
@@ -24,11 +22,10 @@
 (defn valid-moves
   "Returns set of valid moves for the player to move next"
   [g]
-  ;; TODO: simplify this filter, if possible
   (if (nil? (:state g))
-    (filter
-     (fn [n] (nil? (board-cell (:board g) n)))
-     (board-indices))))
+    (remove
+     #(board-cell (:board g) %)
+     board-indices)))
 
 (defn- winner-status
   "Return :X or :O if the player has won the triad"
@@ -60,7 +57,7 @@
 (defn- new-board
   "Return new, empty, tic-tac-toe board"
   []
-  (vec (map (fn [x] constantly nil) (board-indices))))
+  (mapv (fn [_] nil) board-indices))
 
 (defn new
   "Return new tic-tac-toe game with empty board and :X as next player to move"

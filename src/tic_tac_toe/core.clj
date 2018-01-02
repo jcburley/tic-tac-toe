@@ -9,12 +9,15 @@
   (:gen-class))
 
 (def cli-options
-  ;; An option with a required argument
-  [["-v" "--verbose" "Verbosity level"
+  [
+   ;; An option with a required argument
+   ["-v" "--verbose" "Verbosity level"
     :default 0
     :assoc-fn (fn [m k _] (update-in m [k] inc))]
    ;; A boolean option defaulting to nil
-   ["-h" "--help"]])
+   ["-h" "--help"]
+   ]
+  )
 
 (defn usage [options-summary]
   (->> ["This is a primitive tic-tac-toe program. There are many like it, but this one is mine."
@@ -62,23 +65,6 @@
   ([status msg]
    (when msg (println msg))
    {:exit status}))
-
-;; My original hacky attempt to parse options:
-;;(defn parse-opts
-;;  ""
-;;  [fn args]
-;;  (if (some (partial = "--help") args)  <== TODO: learn the Clojure way to do this
-;;    (usage)
-;;    (fn args)))
-
-(defprotocol Player
-  "Define interface for fns that implement (or talk with) a player"
-  ;; Choose next move for the player, based on Game.
-  (choose [this])
-  ;; Report state of Game to player. 'why' is :move, :retry, :win,
-  ;; :lose, or :draw; 'what' is nil or { <player-kw> <move> }; 'valid'
-  ;; is set of valid moves (1-9).
-  (report [this why what valid]))
 
 (declare start-game!)
 
