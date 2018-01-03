@@ -11,7 +11,7 @@
 ;; dynamically (on the fly), rather than creating a map of possible
 ;; strategies and consulting it -- though, since it uses only the
 ;; immutable datatypes offered by Clojure, presumably what it walks
-;; the first time could be memoized in some fashion.
+;; the first time could be memoized.
 ;;
 ;; tic-tac-toe has certain specific properties. For example, strictly
 ;; speaking, one cannot make a move that causes one to lose; the
@@ -20,42 +20,86 @@
 ;; that was allowed, and I don't think it actually is -- would mean
 ;; one can make a losing move.)
 ;;
+;; But if the rules were just slightly modified to allow a player to
+;; place the other player's piece (mark) on the board, player X could
+;; explicitly lose by putting an O in the 3rd of a winning play.
+;;
 ;; Anyway, for simple two-person, non-random, single-move games, a
 ;; goal is to keep this module (as well as some others) abstracted
-;; away from the specifics of any one game.
+;; away from the specifics of any one game. Such abstraction is TBD
+;; (TODO) for now.
 ;;
 ;; Determining the ideal brute-force algorithm is requiring a lot of
 ;; thought on my part, as I can't recall figuring one out for many,
 ;; many years, and am not sure when, where, why, or in what language I
 ;; did it way back then!
 ;;
-;; Starting from the lowest level and working up, a "leaf" move is one
-;; that results in a win, loss, or draw -- there is no continuation of
-;; play. So, a leaf move under consideration has one of these results:
+;; Starting from the lowest level and working up, a "leaf" move (M) is
+;; one for the player (P) that results in a win, loss, or draw --
+;; there is no continuation of play. So, a leaf move under
+;; consideration has one of these results:
 ;;
-;;   Win; Draw; Lose.
+;;   P(M) => Win (W); Draw (D); Lose (L).
 ;;
-;; When multiple moves are considered, they are to be considered in
-;; the order shown (choose a Winning move over a Draw, and a Draw move
-;; over a Losing move).  (In tic-tac-toe, there's only one choice for
-;; a "leaf" move anyway.)
+;; Given multiple moves that are available, they are to be considered
+;; in the order shown (choose W over D, and D over L). E.g. if P(M) =>
+;; W, the algorithm could immediately exit with that as the desired
+;; move -- in any case, some W-resulting move should be returned, if
+;; at least one such move exists. If not, some D-resulting move should
+;; be returned; etc.
 ;;
-;; Now, a non-leaf move has a choice that has what I call an "ongoing"
-;; result (currently coded as 'nil'). The result of that choice must
-;; be analyzed based on other current choices and on the results of
-;; potential subsequent moves. The above ordering becomes:
+;; Now, a non-leaf move represents a further possibility, in that the
+;; opponent (Q) is then able to make a move (M'). Depending on the
+;; results of the opponent's available moves, P might or might not
+;; want to make that non-leaf move, versus making a leaf move, by
+;; considering the available options in this order, where "(> 0 n)"
+;; indicates that at least one move is available that results in <n>:
 ;;
-;;   Win; (Draw or Ongoing); Lose.
+;;   P(M) => Q(M') => (> 0 W) => P should avoid M at all costs.
 ;;
-;; That is, a winning move is always preferred, and a losing move is
-;; always to be avoided in favor of any other (although one could
-;; argue that if an Ongoing move leads to certain loss, picking a
-;; losing move might save resources?).
+;;   P(M) => Q(M') => (> 0 D) => P should prefer a W move to M.
 ;;
-;; So, if any move under present consideration is Ongoing, and there's
-;; no Win move available, the Ongoing move(s) must be analyzed further
-;; to make a choice.
+;;   P(M) => Q(M') => (> 0 L) => P should choose M.
 ;;
+;; When considering a number of possible moves of equal outcome (in
+;; the boolean sense), P might wish to prefer moves that offer a
+;; higher probability of winning (or drawing over losing), if (say) Q
+;; is making random moves, and maybe even if "future P" does so as
+;; well.
+;;
+;; Towards that end, the counts of each type of result for Q(M')
+;; should be "rolled up" so P can choose among the options for M.
+;; Given <w> Q(M')=>W results map to P(M)=><w>*L (<w> ways to lose)
+;; results for P making move M, etc.
+;;
+;; Incorporating such possibilities when analyzing moves for P:
+;;
+;;   P(M) => 1*W  ;; outright win
+;;
+;;   P(M) => <n>*W, 0*D, 0*L  ;; no way to lose or draw, <n> ways to win
+;;
+;;   P(M) => 1*D  ;; outright draw
+;;
+;;   P(M) => <n>*W, <p>*D, 0*L  ;; no way to lose, <p> ways to draw
+;;
+;;   P(M) => 1*L  ;; outright loss
+;;
+;;   P(M) => <n>*W, <p>*D, <w>*L  ;; <w> ways to lose
+;;
+;; <n>*W and <p>*D are pulled in to choose between similarly non-ideal
+;; moves -- e.g. if there's no M available that won't give Q at least
+;; one winning M', P should choose M that offer the most likelihood of
+;; Q making a bad (losing or draw) M' and having the fewest ways to
+;; win.
+;;
+;; Of course, Q might well have a non-leaf M' available, further
+;; complicating things. From Q's perspective, the above analysis works
+;; (with P being its Q); so, a recursive call to the analyzer can be
+;; performed, with the results rolled up (inverted from P's point of
+;; view) into the "report" returned for the analysis of Q's choices.
+;; These results are then rolled up into the report on P(M).
+;;
+
 ;; Recursive analysis is used for such Ongoing moves. The next
 ;; possible move (by the opponent) is analyzed to see what the results
 ;; would be for each move. This analysis starts as above ("Starting
